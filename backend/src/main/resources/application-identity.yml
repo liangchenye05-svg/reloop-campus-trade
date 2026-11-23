@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: campus-identity
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+campus:
+  internal-key: ${INTERNAL_SERVICE_KEY}

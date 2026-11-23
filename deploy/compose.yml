@@ -1,0 +1,187 @@
+name: campus-trade
+
+x-java: &java
+  build:
+    context: ..
+    dockerfile: deploy/Java.Dockerfile
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/127.0.0.1/8080'"]
+    interval: 5s
+    timeout: 3s
+    retries: 20
+    start_period: 20s
+
+x-service-env: &service-env
+  DB_URL: "jdbc:mysql://mysql:3306/campus_trade?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true"
+  JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in deploy/.env}
+  INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:?Set INTERNAL_SERVICE_KEY in deploy/.env}
+  NACOS_ADDR: nacos:8848
+
+services:
+  mysql:
+    image: mysql:8.0.46
+    command: ["--default-time-zone=+00:00"]
+    environment:
+      MYSQL_DATABASE: campus_trade
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in deploy/.env}
+      CT_IDENTITY_DB_PASSWORD: ${CT_IDENTITY_DB_PASSWORD:?Set CT_IDENTITY_DB_PASSWORD in deploy/.env}
+      CT_COMMERCE_DB_PASSWORD: ${CT_COMMERCE_DB_PASSWORD:?Set CT_COMMERCE_DB_PASSWORD in deploy/.env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ../database/schema/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+      - ./mysql-accounts.sh:/docker-entrypoint-initdb.d/002_accounts.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql --protocol=tcp -h127.0.0.1 -uroot -e 'SELECT 1' campus_trade"]
+      interval: 4s
+      timeout: 3s
+      retries: 25
+      start_period: 25s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  nacos:
+    image: nacos/nacos-server:v3.0.3
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      NACOS_AUTH_ADMIN_ENABLE: "false"
+      NACOS_AUTH_CONSOLE_ENABLE: "false"
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:?Set NACOS_AUTH_TOKEN in deploy/.env}
+      NACOS_AUTH_IDENTITY_KEY: CampusTrade-Registry
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:?Set NACOS_AUTH_IDENTITY_VALUE in deploy/.env}
+      JVM_XMS: 256m
+      JVM_XMX: 768m
+      JVM_XMN: 128m
+    volumes:
+      - nacos-data:/home/nacos/data
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/127.0.0.1/9848'"]
+      interval: 5s
+      timeout: 3s
+      retries: 25
+      start_period: 20s
+    restart: unless-stopped
+
+  namesrv:
+    image: apache/rocketmq:5.3.4
+    command: ["sh", "mqnamesrv"]
+    environment:
+      JAVA_OPT_EXT: "-Xms256m -Xmx512m -Xmn128m"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo >/dev/tcp/127.0.0.1/9876'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  broker-init:
+    image: apache/rocketmq:5.3.4
+    user: "0:0"
+    entrypoint: ["chown", "rocketmq:rocketmq", "/home/rocketmq/store"]
+    volumes:
+      - rocket-data:/home/rocketmq/store
+
+  broker:
+    image: apache/rocketmq:5.3.4
+    command: ["sh", "mqbroker", "-n", "namesrv:9876", "-c", "/etc/campus/broker.conf"]
+    depends_on:
+      namesrv:
+        condition: service_healthy
+      broker-init:
+        condition: service_completed_successfully
+    environment:
+      JAVA_OPT_EXT: "-Xms384m -Xmx768m -Xmn192m"
+    volumes:
+      - ./rocket-broker.conf:/etc/campus/broker.conf:ro
+      - rocket-data:/home/rocketmq/store
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo >/dev/tcp/127.0.0.1/10911"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  rocket-setup:
+    image: apache/rocketmq:5.3.4
+    entrypoint: ["bash", "/etc/campus/rocket-setup.sh"]
+    depends_on:
+      broker:
+        condition: service_healthy
+    volumes:
+      - ./rocket-setup.sh:/etc/campus/rocket-setup.sh:ro
+
+  identity:
+    <<: *java
+    environment:
+      <<: *service-env
+      SPRING_PROFILES_ACTIVE: identity
+      DB_USER: campus_identity
+      DB_PASSWORD: ${CT_IDENTITY_DB_PASSWORD}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+
+  commerce:
+    <<: *java
+    environment:
+      <<: *service-env
+      SPRING_PROFILES_ACTIVE: commerce
+      DB_USER: campus_commerce
+      DB_PASSWORD: ${CT_COMMERCE_DB_PASSWORD}
+      CAMPUS_CACHE_ENABLED: "true"
+      REDIS_HOST: redis
+      ROCKETMQ_ENABLED: "true"
+      ROCKETMQ_NAMESRV: namesrv:9876
+      ORDER_TIMEOUT: ${ORDER_TIMEOUT:-PT15M}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rocket-setup:
+        condition: service_completed_successfully
+
+  gateway:
+    <<: *java
+    build:
+      context: ..
+      dockerfile: deploy/Java.Dockerfile
+      args:
+        MODULE: gateway
+    environment:
+      NACOS_ADDR: nacos:8848
+    depends_on:
+      identity:
+        condition: service_healthy
+      commerce:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Web.Dockerfile
+    ports:
+      - "127.0.0.1:${CAMPUS_WEB_PORT:-8088}:80"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  nacos-data:
+  rocket-data:

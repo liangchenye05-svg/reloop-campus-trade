@@ -1,0 +1,82 @@
+[
+  {
+    "image": "organizer",
+    "title": "原木桌面收纳盒",
+    "category": "DAILY",
+    "price": 15,
+    "stock": 2,
+    "description": "适合宿舍书桌整理笔和便签，三个格子完整，底部有轻微使用痕迹。"
+  },
+  {
+    "image": "controller",
+    "title": "无线双摇杆手柄",
+    "category": "ELECTRONICS",
+    "price": 89,
+    "stock": 2,
+    "description": "桌面游戏手柄，双摇杆回中正常。附短充电线，可在公共区试按键。"
+  },
+  {
+    "image": "backpack",
+    "title": "橄榄绿通勤双肩包",
+    "category": "OTHER",
+    "price": 58,
+    "stock": 2,
+    "description": "帆布背包，可放 14 英寸电脑。拉链顺滑，肩带和背板已清洁。"
+  },
+  {
+    "image": "camera",
+    "title": "复古橙色便携数码相机",
+    "category": "ELECTRONICS",
+    "price": 329,
+    "stock": 2,
+    "description": "小型便携相机，适合校园随手拍。附腕带，交接时可查看开机和回放。"
+  },
+  {
+    "image": "lamp",
+    "title": "奶白可调角度学习台灯",
+    "category": "DAILY",
+    "price": 48,
+    "stock": 3,
+    "description": "开关与灯臂正常，晚间在宿舍看书够用。附原电源线。"
+  },
+  {
+    "image": "bicycle",
+    "title": "带前筐校园通勤自行车",
+    "category": "SPORTS",
+    "price": 260,
+    "stock": 2,
+    "description": "适合校园通勤，前筐可放书包。轮胎已充气，可现场试骑。"
+  },
+  {
+    "image": "monitor",
+    "title": "24 英寸窄边框显示器",
+    "category": "ELECTRONICS",
+    "price": 239,
+    "stock": 2,
+    "description": "居家学习换屏后闲置，配底座和视频线，可面交点亮查看。"
+  },
+  {
+    "image": "headphones",
+    "title": "墨绿头戴式蓝牙耳机",
+    "category": "ELECTRONICS",
+    "price": 129,
+    "stock": 3,
+    "description": "耳罩柔软，蓝牙连接和耳机按键均可使用，附充电线。"
+  },
+  {
+    "image": "keyboard",
+    "title": "奶油绿 75% 机械键盘",
+    "category": "ELECTRONICS",
+    "price": 159,
+    "stock": 3,
+    "description": "宿舍换下来的紧凑键盘，按键齐全，已清洁，附 USB 线。"
+  },
+  {
+    "image": "textbooks",
+    "title": "高等数学与线性代数教材",
+    "category": "BOOKS",
+    "price": 36,
+    "stock": 4,
+    "description": "适合大一复习，三册装订完整。少量铅笔笔记，可在校园公共区面交。"
+  }
+]

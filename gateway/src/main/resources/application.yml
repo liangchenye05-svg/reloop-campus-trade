@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  application:
+    name: campus-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:}
+        password: ${NACOS_PASSWORD:}
+        ip: ${NACOS_REGISTER_IP:}
+        register-enabled: false
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2500
+            response-timeout: 10s
+logging:
+  pattern:
+    level: "%5p [traceId=%X{traceId:-}]"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

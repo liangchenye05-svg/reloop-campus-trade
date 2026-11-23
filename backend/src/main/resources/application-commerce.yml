@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: campus-commerce
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 1500
+            readTimeout: 2000
+campus:
+  internal-key: ${INTERNAL_SERVICE_KEY}

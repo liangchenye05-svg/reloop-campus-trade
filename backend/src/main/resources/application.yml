@@ -1,0 +1,52 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  application:
+    name: campus-trade
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        username: ${NACOS_USERNAME:}
+        password: ${NACOS_PASSWORD:}
+        ip: ${NACOS_REGISTER_IP:}
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/campus_trade?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
+    username: ${DB_USER:campus_trade}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: 300ms
+      timeout: 500ms
+  mvc:
+    problemdetails:
+      enabled: false
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    arg-name-based-constructor-auto-mapping: true
+management:
+  health:
+    redis:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health
+logging:
+  pattern:
+    level: "%5p [traceId=%X{traceId:-}]"
+campus:
+  orders:
+    timeout: ${ORDER_TIMEOUT:PT15M}
+  mq:
+    enabled: ${ROCKETMQ_ENABLED:false}
+    namesrv: ${ROCKETMQ_NAMESRV:127.0.0.1:9876}
+  cache:
+    enabled: ${CAMPUS_CACHE_ENABLED:false}
+  security:
+    secret: ${JWT_SECRET}
